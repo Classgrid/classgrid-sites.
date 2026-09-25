@@ -5,17 +5,21 @@ export function middleware(req: NextRequest) {
   const url = req.nextUrl;
   const hostname = req.headers.get('host') || '';
 
-  // Extract the subdomain (e.g., "nikhil" from "nikhil.classgrid.in")
+  // Extract the subdomain (e.g., "school-demo-123" from "school-demo-123.sites.classgrid.in")
   let currentHost = hostname;
   
-  if (process.env.NODE_ENV === 'production') {
-    currentHost = hostname.replace('.classgrid.in', '');
+  if (currentHost.includes('.sites.classgrid.in')) {
+    currentHost = currentHost.split('.sites.classgrid.in')[0];
+  } else if (currentHost.includes('classgrid-sites.vercel.app')) {
+    // If visited directly on Vercel preview, just show a fallback or default
+    currentHost = currentHost.split('.classgrid-sites.vercel.app')[0];
   } else {
-    currentHost = hostname.replace('.localhost:3000', '');
+    // Fallback for localhost or other domains
+    currentHost = currentHost.split(':')[0];
   }
 
   // If there is no subdomain or it's the root domain, let it pass through to the default Next.js page
-  if (!currentHost || currentHost === 'classgrid.in' || currentHost === 'localhost:3000') {
+  if (!currentHost || currentHost === 'classgrid.in' || currentHost === 'localhost') {
     return NextResponse.next();
   }
 
@@ -27,8 +31,8 @@ export function middleware(req: NextRequest) {
   const path = url.pathname === '/' ? '/index.html' : url.pathname;
   
   // Rewrite the request to fetch the HTML directly from Cloudflare R2
-  // E.g., fetches -> https://pub-96a564393c0440f2bab37ad8bbe92398.r2.dev/sites/nikhil/index.html
-  const targetUrl = new URL(`/sites/${currentHost}${path}`, R2_URL);
+  // E.g., fetches -> https://pub-96a564393c0440f2bab37ad8bbe92398.r2.dev/websites/nikhil/index.html
+  const targetUrl = new URL(`/websites/${currentHost}${path}`, R2_URL);
   
   return NextResponse.rewrite(targetUrl);
 }
